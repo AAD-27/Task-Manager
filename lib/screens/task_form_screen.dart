@@ -32,41 +32,31 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   }
 
   String? _validateTitle(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter a task title';
-    }
-    if (value.length < 3) {
-      return 'Title must be at least 3 characters';
-    }
-    if (value.length > 100) {
-      return 'Title must be less than 100 characters';
-    }
+    if (value == null || value.isEmpty) return 'Title is required';
+    if (value.length < 3) return 'Minimum 3 characters';
+    if (value.length > 100) return 'Maximum 100 characters';
     return null;
   }
 
   String? _validateDescription(String? value) {
     if (value != null && value.length > 500) {
-      return 'Description must be less than 500 characters';
+      return 'Maximum 500 characters';
     }
     return null;
   }
 
   void _saveTask() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     bool success;
     if (widget.task == null) {
-      // Create new task
       success = await Back4AppService.createTask(
         _titleController.text.trim(),
         _descriptionController.text.trim(),
       );
     } else {
-      // Update existing task
       success = await Back4AppService.updateTask(
         widget.task!.id!,
         _titleController.text.trim(),
@@ -81,20 +71,34 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            widget.task == null
-                ? '✅ Task created successfully'
-                : '✅ Task updated successfully',
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(
+                widget.task == null
+                    ? 'Task created successfully'
+                    : 'Task updated successfully',
+              ),
+            ],
           ),
-          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Error saving task'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Error saving task'),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -107,7 +111,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
+        content: const Text('This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -122,9 +126,16 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Task deleted successfully'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.white),
+                      SizedBox(width: 12),
+                      Text('Task deleted'),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange.shade600,
+                  behavior: SnackBarBehavior.floating,
                 ),
               );
               Navigator.of(context).pop();
@@ -143,16 +154,18 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && (_titleController.text.isNotEmpty || _descriptionController.text.isNotEmpty)) {
+        if (!didPop &&
+            (_titleController.text.isNotEmpty ||
+                _descriptionController.text.isNotEmpty)) {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('Discard Changes'),
-              content: const Text('Are you sure you want to discard changes?'),
+              content: const Text('Are you sure?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: const Text('Keep Editing'),
                 ),
                 TextButton(
                   onPressed: () {
@@ -167,69 +180,121 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          title: Text(isEditing ? 'Edit Task' : 'New Task'),
-          centerTitle: true,
-          elevation: 0,
+          backgroundColor: Colors.white,
+          elevation: 1,
+          title: Text(
+            isEditing ? 'Edit Task' : 'Create Task',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Colors.black87,
+            ),
+          ),
           actions: [
             if (isEditing)
               IconButton(
-                icon: const Icon(Icons.delete),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
                 onPressed: _isLoading ? null : _deleteTask,
-                tooltip: 'Delete Task',
               ),
           ],
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(20),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
-                  // Title Field
+                  // Title Section
                   Text(
                     'Task Title',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter task title',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(Icons.task),
-                      filled: true,
-                      fillColor: Colors.grey[50],
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade900,
                     ),
-                    validator: _validateTitle,
-                    textInputAction: TextInputAction.next,
                   ),
-                  const SizedBox(height: 24),
-                  // Description Field
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextFormField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        hintText: 'What needs to be done?',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(
+                          Icons.task_outlined,
+                          color: Color(0xFF4F46E5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 16),
+                      validator: _validateTitle,
+                      textInputAction: TextInputAction.next,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  // Description Section
                   Text(
                     'Description',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter task description (optional)',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                      alignLabelWithHint: true,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade900,
                     ),
-                    maxLines: 5,
-                    validator: _validateDescription,
-                    textInputAction: TextInputAction.done,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextFormField(
+                      controller: _descriptionController,
+                      decoration: InputDecoration(
+                        hintText: 'Add details... (optional)',
+                        hintStyle: TextStyle(color: Colors.grey.shade400),
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(
+                          Icons.description_outlined,
+                          color: Color(0xFF4F46E5),
+                        ),
+                        alignLabelWithHint: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      maxLines: 5,
+                      style: const TextStyle(fontSize: 16),
+                      validator: _validateDescription,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   // Buttons
@@ -237,18 +302,25 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  Navigator.of(context).pop();
-                                },
+                          onPressed: _isLoading ? null : () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            side: const BorderSide(
+                              color: Color(0xFF4F46E5),
+                              width: 2,
                             ),
                           ),
-                          child: const Text('Cancel'),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF4F46E5),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -256,28 +328,38 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _saveTask,
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            elevation: 0,
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                    strokeWidth: 2.5,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
                                       Colors.white,
                                     ),
                                   ),
                                 )
-                              : Text(isEditing ? 'Update' : 'Create'),
+                              : Text(
+                                  isEditing ? 'Update' : 'Create',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
