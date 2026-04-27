@@ -56,7 +56,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Color.fromRGBO(0, 0, 0, 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

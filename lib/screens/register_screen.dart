@@ -135,7 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Color.fromRGBO(0, 0, 0, 0.2),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -357,9 +357,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444).withOpacity(0.1),
+                              color: Color.fromRGBO(239, 68, 68, 0.1),
                               border: Border.all(
-                                color: const Color(0xFFEF4444).withOpacity(0.3),
+                                color: Color.fromRGBO(239, 68, 68, 0.3),
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),

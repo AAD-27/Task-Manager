@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import '../models/task.dart';
 
@@ -5,6 +6,27 @@ class Back4AppService {
   static const String parseServerUrl = 'https://parseapi.back4app.com';
   static const String parseAppId = '5XBNYJE42GFkJGJRGN6pwwQrz9R9quFqziCNEX0N';
   static const String parseClientKey = 'imcEkChSjKhY2oKIMXlsVjRjojNI5xve0ZxdlPCN';
+  // Simple polling-based stream for task updates. Use startPolling() to enable.
+  static final StreamController<List<Task>> _taskStreamController = StreamController.broadcast();
+  static Stream<List<Task>> get taskStream => _taskStreamController.stream;
+  static Timer? _pollTimer;
+
+  /// Start a polling loop that fetches tasks every [intervalSeconds] and
+  /// emits them on [taskStream]. This is a lightweight fallback to LiveQuery.
+  static void startPolling({int intervalSeconds = 5}) {
+    stopPolling();
+    _pollTimer = Timer.periodic(Duration(seconds: intervalSeconds), (t) async {
+      final tasks = await getTasks();
+      if (!_taskStreamController.isClosed) {
+        _taskStreamController.add(tasks);
+      }
+    });
+  }
+
+  static void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
 
   static Future<void> initialize() async {
     try {
@@ -96,6 +118,10 @@ class Back4AppService {
         final tasks = (response.results as List)
             .map((e) => Task.fromJson((e as ParseObject).toJson()))
             .toList();
+        // Emit current tasks to any listeners
+        if (!_taskStreamController.isClosed) {
+          _taskStreamController.add(tasks);
+        }
         print('✅ Retrieved ${tasks.length} tasks');
         return tasks;
       } else {
@@ -164,6 +190,11 @@ class Back4AppService {
       final response = await task.delete();
       if (response.success) {
         print('✅ Task deleted successfully');
+        // Refresh listeners
+        final tasks = await getTasks();
+        if (!_taskStreamController.isClosed) {
+          _taskStreamController.add(tasks);
+        }
         return true;
       } else {
         print('❌ Failed to delete task: ${response.error?.message}');
